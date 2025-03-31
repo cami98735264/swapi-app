@@ -180,7 +180,8 @@ const Movie: React.FC<StatsCardProps> = ({
             <Text style={styles.statsCardSubtitleText}>Productor(es): {producer}</Text>
             <Text style={styles.statsCardSubtitleText}>Director(es): {director}</Text>
             </View>
-            <ScrollView style={styles.statsCardDescriptionContainer}>
+            <ScrollView style={styles.statsCardDescriptionContainer} nestedScrollEnabled={true} keyboardDismissMode="on-drag"
+  keyboardShouldPersistTaps="handled">
             <Text style={styles.statsCardDescriptionText}>
                 {description}
             </Text>

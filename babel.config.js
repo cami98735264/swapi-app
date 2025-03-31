@@ -14,6 +14,7 @@ module.exports = {
             '@screens': './src/screens',
             '@assets': './src/assets',
             '@utils': './src/utils',
+            '@config': './src/config',
           },
         },
     ]

@@ -9,7 +9,8 @@
       "@navigation/*": ["./src/navigation/*"],
       "@screens/*": ["./src/screens/*"],
       "@assets/*": ["./src/assets/*"],
-      "@utils/*": ["./src/utils/*"]
+      "@utils/*": ["./src/utils/*"],
+      "@config/*": ["./src/config/*"],
     },
     "jsx": "react-native",
     "allowSyntheticDefaultImports": true

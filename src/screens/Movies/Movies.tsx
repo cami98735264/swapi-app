@@ -1,71 +1,40 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import DefaultStyles from '@utils/styles/DefaultStyles';
 import Dropdown from '@components/Dropdown';
-import FiltersLabel from 'components/SubsectionLabel';
-import {useEffect} from 'react';
+import { useIsFocused } from '@react-navigation/native'
+import { useQuery } from '@tanstack/react-query'
 import StatsCard from '@components/StatsCard';
 import StyledInput from 'components/StyledInput';
-import SubsectionLabel from 'components/SubsectionLabel';
+import { fetchMovies } from 'utils/api/api';
+import SubsectionLabel from '@components/SubsectionLabel';
+import MoviesList from './MoviesList';
+import { useQueryClient } from '@tanstack/react-query';
+
 
 interface MoviesScreenProps {
   navigation: any;
 }
 
 const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
-  let [movieInfo, setMovieInfo] = React.useState([{
-    movieStats: [
-      {
-        name: 'Personajes',
-        icon: 'person',
-        value: 24,
-      },
-      {
-        name: 'Naves',
-        icon: 'rocket-launch',
-        value: 480,
-      },
-      {
-        name: 'Vehículos',
-        icon: 'directions-car',
-        value: 54,
-      },
-      {
-        name: 'Especies',
-        icon: 'pets',
-        value: 25,
-      },
-      {
-        name: 'Planetas',
-        icon: 'public',
-        value: 34,
-      },
-    ],
-    header: {
-      title: {
-        text: 'Cargando...',
-        icon: 'videocam',
-      },
-      complementaryInfo: {
-        text: '0000-00-00',
-        icon: 'calendar-today',
-      },
-    },
-    episode_id: 4,
-    subtitle: {
-      producer: 'Cargando...',
-      director: 'Cargando...',
-    },
-    description: 'Cargando...',
-  }]);
-
+  const queryClient = useQueryClient();
+  const movies = queryClient.getQueryData<{ header: { title: { text: string } } }[]>(['movies']);
+  console.log(movies);
   let [filterOptions, setFilterOptions] = React.useState([]);
   let [search, setSearch] = React.useState('');
   let [country, setCountry] = React.useState('');
   let defaultStyles = DefaultStyles();
   let textColor = {...defaultStyles.textColorDefaultLight};
+  let [searchPlaceholder, setSearchPlaceholder] = React.useState('Buscar...');
 
+  useEffect(() => {
+    // Set the search placeholder to a random movie title when the component mounts
+    if (movies && movies.length > 0) {
+      const randomMovie = movies[Math.floor(Math.random() * movies.length)];
+      setSearchPlaceholder(randomMovie.header.title.text);
+    }
+  }, [movies]);
   return (
     <SafeAreaView style={{...defaultStyles.containerView, height: '100%'}}>
       <View>
@@ -84,7 +53,7 @@ const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
           icon="search"
           setValue={setSearch}
           value={search}
-          placeholder={movieInfo[Math.floor(Math.random() * movieInfo.length)].header.title.text}
+          placeholder={searchPlaceholder}
         />
         <View>
           <View style={{flexDirection: 'column', gap: 8}}>
@@ -123,20 +92,8 @@ const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
         </View>
           </View>
         </View>
-        <FlatList
-          data={movieInfo}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({item}) => (
-        <StatsCard
-          header={item.header}
-          episode_id={item.episode_id}
-          subtitle={item.subtitle}
-          description={item.description}
-          statsItems={item.movieStats}
-        />
-          )}
-          contentContainerStyle={{gap: 16}}
-        />
+        <View />
+        <MoviesList />
       </View>
     </SafeAreaView>
   );
