@@ -4,12 +4,20 @@ import { FlatList, Text, View } from 'react-native';
 import SubsectionLabel from '@components/SubsectionLabel';
 import StatsCard from '@components/StatsCard';
 import DefaultStyles from 'utils/styles/DefaultStyles';
-const MoviesList = () => {
+
+
+interface filters {
+    search: string;
+    page_id?: string;
+}
+
+
+const MoviesList: React.FC<filters> = (filters) => {
     const defaultStyles = DefaultStyles();
     const { data, error, isLoading } = useQuery({
-        queryKey: ['movies'],
-        queryFn: ({ queryKey }) => fetchMovies(),
-    })
+        queryKey: ['movies', filters],
+        queryFn: fetchMovies,
+    });
 
     if (isLoading) return (
         <View style={{justifyContent: 'center', alignItems: 'center'}}>
@@ -18,21 +26,19 @@ const MoviesList = () => {
     )
     if (error) return (
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={defaultStyles.textColorDefaultLight}>Error al cargar películas</Text>
+            <Text style={{...defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily}}>Error al cargar películas</Text>
         </View>
     )
 
     return (
-        <FlatList
+        data && data.length > 0 ? (
+            <FlatList
             keyboardShouldPersistTaps="handled"
 
             data={Array.isArray(data) ? data : []}
             ListFooterComponent={
               <View>
-                <SubsectionLabel
-                  label="Resultados"
-                  icon="filter-alt"
-                />
+                
               </View>
             }
             keyExtractor={(_, index) => index.toString()}
@@ -48,6 +54,11 @@ const MoviesList = () => {
             contentContainerStyle={{gap: 16, paddingBottom: '90%'}}
             showsVerticalScrollIndicator={false}
           />
+          ) : (
+            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+              <Text style={{... defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily }}>No se encontraron películas...</Text>
+            </View>
+          )
     )
 }
 

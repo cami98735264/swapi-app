@@ -50,10 +50,17 @@ interface MovieInfo {
   }
 
 
-let fetchMovies = async (page_id?: number) => {
+let fetchMovies = async ({ queryKey }: { queryKey: [string, { search: string; page_id?: string }] }) => {
+    const [_key, { search, page_id }] = queryKey;
     try {
-        let page = page_id ? page_id : '';
-        let response = await fetch(`https://swapi.py4e.com/api/films/${page}`);
+        let baseUrl = "https://swapi.py4e.com/api/films"
+        if (search) {
+            baseUrl += `?search=${search}`;
+        }
+        if (page_id && !search) {
+            baseUrl += "/" + page_id;
+        }
+        let response = await fetch(baseUrl);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
