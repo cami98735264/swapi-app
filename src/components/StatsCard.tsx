@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from "react-native";
 import DefaultStyles from "utils/styles/DefaultStyles";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -19,31 +20,72 @@ interface headerProps {
     }
 }
 
-interface subtitleProps {
+interface MovieSubtitleProps {
+    type: 'movie';
     producer: string;
     director: string;
 }
+
+interface PlanetSubtitleProps {
+    type: 'planet';
+    climate: string;
+    terrain: string;
+}
+
+interface PersonSubtitleProps {
+    type: 'person';
+    height: string;
+    mass: string;
+}
+
+type SubtitleProps = MovieSubtitleProps | PlanetSubtitleProps | PersonSubtitleProps;
+
 interface StatsCardProps {
     header: headerProps;
     episode_id: number;
-    subtitle: subtitleProps;
+    subtitle: SubtitleProps;
     description: string;
     statsItems: statsItem[];
 }
 
-
-const Movie: React.FC<StatsCardProps> = ({ 
+const StatsCard: React.FC<StatsCardProps> = ({ 
     header: {
         title: { text, icon },
         complementaryInfo: { text: complementaryText, icon: complementaryIcon }
     },
     episode_id,
-    subtitle: { producer, director },
+    subtitle,
     description,
     statsItems
  }) => {
     let defaultStyles = DefaultStyles();
     let defaultTextColor = { ...defaultStyles.textColorDefault };
+
+    const renderSubtitle = () => {
+        switch (subtitle.type) {
+            case 'movie':
+                return (
+                    <>
+                        <Text style={styles.statsCardSubtitleText}>Productor(es): {subtitle.producer}</Text>
+                        <Text style={styles.statsCardSubtitleText}>Director(es): {subtitle.director}</Text>
+                    </>
+                );
+            case 'planet':
+                return (
+                    <>
+                        <Text style={styles.statsCardSubtitleText}>Clima: {subtitle.climate}</Text>
+                        <Text style={styles.statsCardSubtitleText}>Terreno: {subtitle.terrain}</Text>
+                    </>
+                );
+            case 'person':
+                return (
+                    <>
+                        <Text style={styles.statsCardSubtitleText}>Altura: {subtitle.height}</Text>
+                        <Text style={styles.statsCardSubtitleText}>Peso: {subtitle.mass}</Text>
+                    </>
+                );
+        }
+    };
 
     let styles = StyleSheet.create({
         // StatsCard Container
@@ -167,42 +209,41 @@ const Movie: React.FC<StatsCardProps> = ({
     return (
         <View style={styles.statsCardContainer}>
             <View style={styles.statsCardHeaderContainer}>
-            <ScrollView contentContainerStyle={styles.statsCardTitleContainer} horizontal={true}>
-                <MaterialIcons name={icon} size={36} color={defaultTextColor.color} />
-                <Text style={styles.statsCardTitleText}>{text}</Text>
-            </ScrollView>
-            <View style={styles.statsCardDateTextContainer}>
-                <MaterialIcons name={complementaryIcon} size={24} color={'#000'} />
-                <Text style={styles.statsCardDateText}>{complementaryText}</Text>
-            </View>
+                <ScrollView contentContainerStyle={styles.statsCardTitleContainer} horizontal={true}>
+                    <MaterialIcons name={icon} size={36} color={defaultTextColor.color} />
+                    <Text style={styles.statsCardTitleText}>{text}</Text>
+                </ScrollView>
+                <View style={styles.statsCardDateTextContainer}>
+                    <MaterialIcons name={complementaryIcon} size={24} color={'#000'} />
+                    <Text style={styles.statsCardDateText}>{complementaryText}</Text>
+                </View>
             </View>
             <View style={styles.statsCardSubtitleContainer}>
-            <Text style={styles.statsCardSubtitleText}>Productor(es): {producer}</Text>
-            <Text style={styles.statsCardSubtitleText}>Director(es): {director}</Text>
+                {renderSubtitle()}
             </View>
-            <ScrollView style={styles.statsCardDescriptionContainer} nestedScrollEnabled={true} keyboardDismissMode="on-drag"
-  keyboardShouldPersistTaps="handled">
-            <Text style={styles.statsCardDescriptionText}>
-                {description}
-            </Text>
-            </ScrollView>
+            {subtitle.type === 'movie' && (
+                <ScrollView style={styles.statsCardDescriptionContainer} nestedScrollEnabled={true} keyboardDismissMode="on-drag"
+                    keyboardShouldPersistTaps="handled">
+                    <Text style={styles.statsCardDescriptionText}>
+                        {description}
+                    </Text>
+                </ScrollView>
+            )}
             <View style={styles.statsCardStatsContainer}>
-            {statsItems.map((item, index) => (
-                <View key={index} style={styles.statsCardStatsItemContainer}>
-                <MaterialIcons name={item.icon} size={26} color={defaultTextColor.color} />
-                <Text style={styles.statsCardStatsItemText}>
-                    <Text style={styles.statsCardStatsItemNumber}>{item.value}</Text> {item.name}
-                </Text>
-                </View>
-            ))}
+                {statsItems.map((item, index) => (
+                    <View key={index} style={styles.statsCardStatsItemContainer}>
+                        <MaterialIcons name={item.icon} size={26} color={defaultTextColor.color} />
+                        <Text style={styles.statsCardStatsItemText}>
+                            <Text style={styles.statsCardStatsItemNumber}>{item.value}</Text> {item.name}
+                        </Text>
+                    </View>
+                ))}
             </View>
             <View style={styles.statsCardViewDetailedInfoButton}>
-            <Text style={styles.statsCardViewDetailedInfoButtonText}>ver información detallada</Text>
+                <Text style={styles.statsCardViewDetailedInfoButtonText}>ver información detallada</Text>
             </View>
         </View>
     )
 }
 
-
-
-export default Movie;
+export default StatsCard;

@@ -70,6 +70,41 @@ interface PlanetInfo {
     name: string;
     header: Header;
     stats: StatsItem[];
+    subtitle: {
+        type: 'planet';
+        climate: string;
+        terrain: string;
+    };
+}
+
+interface Person {
+    name: string;
+    height: string;
+    mass: string;
+    hair_color: string;
+    skin_color: string;
+    eye_color: string;
+    birth_year: string;
+    gender: string;
+    homeworld: string;
+    films: string[];
+    species: string[];
+    vehicles: string[];
+    starships: string[];
+    created: string;
+    edited: string;
+    url: string;
+}
+
+interface PersonInfo {
+    name: string;
+    header: Header;
+    stats: StatsItem[];
+    subtitle: {
+        type: 'person';
+        height: string;
+        mass: string;
+    };
 }
 
 let fetchMovies = async ({ queryKey }: { queryKey: [string, { search: string; page_id?: string }] }) => {
@@ -148,9 +183,14 @@ let fetchPlanets = async ({ queryKey }: { queryKey: [string, { search: string; p
                     icon: 'public',
                 },
                 complementaryInfo: {
-                    text: planet.climate.toLowerCase(),
-                    icon: 'wb-sunny',
+                    text: planet.population === 'unknown' ? '0' : planet.population,
+                    icon: 'people',
                 },
+            },
+            subtitle: {
+                type: 'planet',
+                climate: planet.climate,
+                terrain: planet.terrain
             },
             stats: [
                 { name: 'población', icon: 'people', value: planet.population === 'unknown' ? 0 : parseInt(planet.population) },
@@ -167,4 +207,54 @@ let fetchPlanets = async ({ queryKey }: { queryKey: [string, { search: string; p
     }
 };
 
-export { fetchMovies, fetchPlanets };
+let fetchPeople = async ({ queryKey }: { queryKey: [string, { search: string; page_id?: string }] }) => {
+    const [_key, { search, page_id }] = queryKey;
+    try {
+        let baseUrl = "https://swapi.py4e.com/api/people"
+        if (search) {
+            baseUrl += `?search=${search}`;
+        }
+        if (page_id && !search) {
+            baseUrl += "/" + page_id;
+        }
+        let response = await fetch(baseUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let data = await response.json();
+        console.log('People data:', data);
+        let personInfo: PersonInfo[] = data.results.map((person: Person) => ({
+            name: person.name,
+            header: {
+                title: {
+                    text: person.name.toLowerCase(),
+                    icon: 'person',
+                },
+                complementaryInfo: {
+                    text: person.gender.toLowerCase(),
+                    icon: 'wc',
+                },
+            },
+            subtitle: {
+                type: 'person',
+                height: person.height === 'unknown' ? 'Desconocida' : `${person.height} cm`,
+                mass: person.mass === 'unknown' ? 'Desconocido' : `${person.mass} kg`
+            },
+            stats: [
+                { name: 'color de pelo', icon: 'content-cut', value: person.hair_color === 'n/a' ? 'N/A' : person.hair_color },
+                { name: 'color de piel', icon: 'palette', value: person.skin_color === 'n/a' ? 'N/A' : person.skin_color },
+                { name: 'color de ojos', icon: 'visibility', value: person.eye_color === 'n/a' ? 'N/A' : person.eye_color },
+                { name: 'año de nacimiento', icon: 'cake', value: person.birth_year === 'unknown' ? 'Desconocido' : person.birth_year },
+                { name: 'películas', icon: 'movie', value: person.films.length },
+            ],
+        }));
+        return personInfo;
+    } catch (error) {
+        console.error('Error fetching people:', error);
+        throw error;
+    }
+};
+
+export { fetchMovies, fetchPlanets, fetchPeople };

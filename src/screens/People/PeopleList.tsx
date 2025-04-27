@@ -13,36 +13,30 @@ interface Header {
   };
 }
 
-
-interface Subtitle {
-  type: 'movie';
-  producer: string;
-  director: string;
-}
-
-
 interface StatsItem {
   name: string;
   icon: string;
   value: number;
 }
 
-interface MovieInfo {
-  episode_id: number;
+interface PersonInfo {
+  name: string;
   header: Header;
-  subtitle: Subtitle;
-  description: string;
-  movieStats: StatsItem[];
+  stats: StatsItem[];
+  subtitle: {
+    type: 'person';
+    height: string;
+    mass: string;
+  };
 }
 
-interface MoviesListProps {
-    data: MovieInfo[];
+interface PeopleListProps {
+    data: PersonInfo[];
     error: any;
     isLoading: boolean;
 }
 
-
-const MoviesList: React.FC<MoviesListProps> = ({ 
+const PeopleList: React.FC<PeopleListProps> = ({ 
     data,
     error,
     isLoading
@@ -51,12 +45,12 @@ const MoviesList: React.FC<MoviesListProps> = ({
 
     if (isLoading) return (
         <View style={{justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{...defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily}}>Cargando películas...</Text>
+            <Text style={{...defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily}}>Cargando personas...</Text>
         </View>
     )
     if (error) return (
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{...defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily}}>Error al cargar películas</Text>
+            <Text style={{...defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily}}>Error al cargar personas</Text>
         </View>
     )
 
@@ -64,7 +58,6 @@ const MoviesList: React.FC<MoviesListProps> = ({
         data && data.length > 0 ? (
             <FlatList
             keyboardShouldPersistTaps="handled"
-
             data={Array.isArray(data) ? data : []}
             ListFooterComponent={
               <View>
@@ -74,11 +67,11 @@ const MoviesList: React.FC<MoviesListProps> = ({
             keyExtractor={(_, index) => index.toString()}
             renderItem={({item}) => (
               <StatsCard
-          header={item.header}
-          episode_id={item.episode_id}
-          subtitle={{ ...item.subtitle, type: 'movie' }}
-          description={item.description}
-          statsItems={Array.isArray(item.movieStats) ? item.movieStats : [item.movieStats]}
+                header={item.header}
+                statsItems={Array.isArray(item.stats) ? item.stats : [item.stats]}
+                episode_id={0}
+                subtitle={item.subtitle}
+                description=""
               />
             )}
             contentContainerStyle={{gap: 16, paddingBottom: '90%'}}
@@ -86,12 +79,10 @@ const MoviesList: React.FC<MoviesListProps> = ({
           />
           ) : (
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-              <Text style={{... defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily }}>No se encontraron películas...</Text>
+              <Text style={{... defaultStyles.textColorDefault, ...defaultStyles.defaultFontFamily }}>No se encontraron personas...</Text>
             </View>
           )
     )
 }
 
-
-
-export default MoviesList;
+export default PeopleList; 

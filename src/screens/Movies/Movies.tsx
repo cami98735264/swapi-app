@@ -24,6 +24,7 @@ interface Header {
 }
 
 interface Subtitle {
+  type: 'movie';
   producer: string;
   director: string;
 }
@@ -134,11 +135,16 @@ useFocusEffect(
   }, [])
 );
 useEffect(() => {
-  if (movies && !hasInitializedData.initialized && movies.length > hasInitializedData.originalMoviesLength) {
+  if (movies && !hasInitializedData.initialized) {
     setHasInitializedData((prev) => ({ ...prev, initialized: true }));
-    // Check if movies length has changed (pagination), if so, set original movies
     setHasInitializedData((prev) => ({ ...prev, originalMoviesLength: movies.length }));
-    setOriginalMovies(movies);
+    setOriginalMovies(movies.map(movie => ({
+      ...movie,
+      subtitle: {
+        ...movie.subtitle,
+        type: 'movie' as const
+      }
+    })));
     
     // Set random title for search placeholder
     const randomIndex = Math.floor(Math.random() * movies.length);
@@ -146,41 +152,40 @@ useEffect(() => {
     setSearchPlaceholder(randomMovie.header.title.text);
 
     // Set filter options data
-    let producersFilter = movies?.flatMap((x: MovieInfo) => x.subtitle.producer?.split(",") || []).map(x => x.trim()).filter(Boolean);
+    let producersFilter = movies?.flatMap((x) => x.subtitle.producer?.split(",") || []).map(x => x.trim()).filter(Boolean);
     let producers = [...new Set(producersFilter)].map((x) => ({ label: x, value: x }));
     setFilterOptionsData((prev) => ({ ...prev, producers }));
 
-    let directorsFilter = movies?.flatMap((x: MovieInfo) => x.subtitle.director?.split(",") || []).map(x => x.trim()).filter(Boolean);
+    let directorsFilter = movies?.flatMap((x) => x.subtitle.director?.split(",") || []).map(x => x.trim()).filter(Boolean);
     let directors = [...new Set(directorsFilter)].map((x) => ({ label: x, value: x }));
     setFilterOptionsData((prev) => ({ ...prev, directors }));
 
-
-    let datesFilter = movies?.flatMap((x: MovieInfo) => x.header.complementaryInfo.text).map(x => x.trim()).filter(Boolean);
+    let datesFilter = movies?.flatMap((x) => x.header.complementaryInfo.text).map(x => x.trim()).filter(Boolean);
     let dates = [...new Set(datesFilter)].map((x) => ({ label: x, value: x }));
     setFilterOptionsData((prev) => ({ ...prev, dates }));
   }
 }, [movies]);
 
-  useEffect(() => {
-    if (!originalMovies.length) return; // Skip if no movies are loaded yet
+useEffect(() => {
+  if (!originalMovies.length) return; // Skip if no movies are loaded yet
   
-    if (filterOptions) {
-      queryClient.setQueryData(['movies', { page_id: defaultFilters.page_id, search: defaultFilters.search || "" }], (oldData: MovieInfo[]) => {
+  if (filterOptions) {
+    queryClient.setQueryData(['movies', { page_id: defaultFilters.page_id, search: defaultFilters.search || "" }], (oldData: MovieInfo[]) => {
       let filteredData = [...originalMovies];
       
       if (filterOptions.director && filterOptions.director.length) {
         const selectedDirectors = Array.isArray(filterOptions.director) ? filterOptions.director : [filterOptions.director];
         filteredData = filteredData.filter((movie: MovieInfo) => {
-        const directors = movie.subtitle.director.split(",").map((x) => x.trim());
-        return directors.some((director) => selectedDirectors.includes(director));
+          const directors = movie.subtitle.director.split(",").map((x) => x.trim());
+          return directors.some((director) => selectedDirectors.includes(director));
         });
       }
       
       if (filterOptions.producer && filterOptions.producer.length) {
         const selectedProducers = Array.isArray(filterOptions.producer) ? filterOptions.producer : [filterOptions.producer];
         filteredData = filteredData.filter((movie: MovieInfo) => {
-        const producers = movie.subtitle.producer.split(",").map((x) => x.trim());
-        return producers.some((producer) => selectedProducers.includes(producer));
+          const producers = movie.subtitle.producer.split(",").map((x) => x.trim());
+          return producers.some((producer) => selectedProducers.includes(producer));
         });
       }
 
@@ -194,9 +199,10 @@ useEffect(() => {
         });
       }
       return filteredData;
-      });
-    }
-  }, [filterOptions]);  
+    });
+  }
+}, [filterOptions, originalMovies]);
+
   return (
     <SafeAreaView style={{...defaultStyles.containerView, height: '100%'}}>
       <View>
@@ -272,7 +278,13 @@ useEffect(() => {
           </View>
         </View>
         <View />
-        <MoviesList data={movies || []} error={error} isLoading={isLoading} />
+        <MoviesList data={movies?.map(movie => ({
+          ...movie,
+          subtitle: {
+            ...movie.subtitle,
+            type: 'movie' as const
+          }
+        })) || []} error={error} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );
