@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react';
-import {View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {View, Text, Alert } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import DefaultStyles from '@utils/styles/DefaultStyles';
 import Dropdown from '@components/Dropdown';
-import { useIsFocused } from '@react-navigation/native'
 import { useQuery } from '@tanstack/react-query'
-import StatsCard from '@components/StatsCard';
 import StyledInput from 'components/StyledInput';
 import { fetchMovies } from 'utils/api/api';
 import SubsectionLabel from '@components/SubsectionLabel';
 import MoviesList from './MoviesList';
-import { useQueryClient } from '@tanstack/react-query';
+import { queryClient } from 'config/react-query';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 interface Header {
   title: {
@@ -33,11 +33,6 @@ interface StatsItem {
   icon: string;
   value: number;
 }
-
-
-
-
-
 
 interface Movie {
   characters: string[];
@@ -67,35 +62,141 @@ interface MoviesScreenProps {
   navigation: any;
 }
 
-const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
-  const queryClient = useQueryClient();
+interface Filters {
+  director?: string;
+  producer?: string;
+  release_date?: string;
+}
 
-  const movies = queryClient.getQueryData<MovieInfo[]>(['movies']);
-  let [filterOptions, setFilterOptions] = React.useState<{
-    producer: string | null;
-    filteredMovies: MovieInfo[];
-    director: string | null;
-    release_date: string | null;
-  }>({
-    producer: null,
-    filteredMovies: [],
-    director: null,
-    release_date: null,
+
+interface DefaultFilters {
+  search?: string;
+  page_id?: string;
+}
+
+interface FilterOptionsData {
+  producers: { label: string; value: string }[];
+  directors: { label: string; value: string }[];
+  dates: { label: string; value: string }[];
+}
+
+interface InitializedData {
+  initialized: boolean;
+  originalMoviesLength: number;
+}
+
+const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
+  const [hasInitializedData, setHasInitializedData] = useState<InitializedData>({
+    initialized: false,
+    originalMoviesLength: 0,
   });
-  let [search, setSearch] = React.useState("");
-  let [country, setCountry] = React.useState('');
+  let [filterOptions, setFilterOptions] = React.useState<Filters>({
+    producer: "",
+    director: "",
+    release_date: "",
+  });
   let defaultStyles = DefaultStyles();
-  let [searchPlaceholder, setSearchPlaceholder] = React.useState('Buscar...');
+  let [searchPlaceholder, setSearchPlaceholder] = useState('Buscar...');
+
+  let [filterOptionsData, setFilterOptionsData] = useState<FilterOptionsData>({
+    producers: [],
+    directors: [],
+    dates: [],
+  });
+  let [originalMovies, setOriginalMovies] = useState<MovieInfo[]>([]);
+  const [defaultFilters, setDefaultFilters] = useState<DefaultFilters>({
+    search: "",
+    page_id: undefined,
+  });
+
+  const { data: movies, error, isLoading } = useQuery({
+    queryKey: ['movies', { page_id: defaultFilters.page_id, search: defaultFilters.search || "" }],
+    queryFn: fetchMovies
+});
+useFocusEffect(
+  React.useCallback(() => {
+    // Reset filter options when screen is focused
+    setFilterOptions({
+      producer: "",
+      director: "",
+      release_date: "",
+    });
+    setDefaultFilters((prev) => ({ ...prev, search: "" }));
+    setOriginalMovies([]);
+    setHasInitializedData({ initialized: false, originalMoviesLength: 0 });
+    setFilterOptionsData({
+      producers: [],
+      directors: [],
+      dates: [],
+    });
+    setSearchPlaceholder('Buscar...');
+    queryClient.invalidateQueries({ queryKey: ['movies'] });
+  }, [])
+);
+useEffect(() => {
+  if (movies && !hasInitializedData.initialized && movies.length > hasInitializedData.originalMoviesLength) {
+    setHasInitializedData((prev) => ({ ...prev, initialized: true }));
+    // Check if movies length has changed (pagination), if so, set original movies
+    setHasInitializedData((prev) => ({ ...prev, originalMoviesLength: movies.length }));
+    setOriginalMovies(movies);
+    
+    // Set random title for search placeholder
+    const randomIndex = Math.floor(Math.random() * movies.length);
+    const randomMovie = movies[randomIndex];
+    setSearchPlaceholder(randomMovie.header.title.text);
+
+    // Set filter options data
+    let producersFilter = movies?.flatMap((x: MovieInfo) => x.subtitle.producer?.split(",") || []).map(x => x.trim()).filter(Boolean);
+    let producers = [...new Set(producersFilter)].map((x) => ({ label: x, value: x }));
+    setFilterOptionsData((prev) => ({ ...prev, producers }));
+
+    let directorsFilter = movies?.flatMap((x: MovieInfo) => x.subtitle.director?.split(",") || []).map(x => x.trim()).filter(Boolean);
+    let directors = [...new Set(directorsFilter)].map((x) => ({ label: x, value: x }));
+    setFilterOptionsData((prev) => ({ ...prev, directors }));
+
+
+    let datesFilter = movies?.flatMap((x: MovieInfo) => x.header.complementaryInfo.text).map(x => x.trim()).filter(Boolean);
+    let dates = [...new Set(datesFilter)].map((x) => ({ label: x, value: x }));
+    setFilterOptionsData((prev) => ({ ...prev, dates }));
+  }
+}, [movies]);
 
   useEffect(() => {
-    // Set the search placeholder to a random movie title when the component mounts
-    if (movies && movies.length > 0) {
-      const randomMovie = movies[Math.floor(Math.random() * movies.length)];
-      console.log(randomMovie.header.title.text);
-      setSearchPlaceholder(randomMovie.header.title.text);
+    if (!originalMovies.length) return; // Skip if no movies are loaded yet
+  
+    if (filterOptions) {
+      queryClient.setQueryData(['movies', { page_id: defaultFilters.page_id, search: defaultFilters.search || "" }], (oldData: MovieInfo[]) => {
+      let filteredData = [...originalMovies];
+      
+      if (filterOptions.director && filterOptions.director.length) {
+        const selectedDirectors = Array.isArray(filterOptions.director) ? filterOptions.director : [filterOptions.director];
+        filteredData = filteredData.filter((movie: MovieInfo) => {
+        const directors = movie.subtitle.director.split(",").map((x) => x.trim());
+        return directors.some((director) => selectedDirectors.includes(director));
+        });
+      }
+      
+      if (filterOptions.producer && filterOptions.producer.length) {
+        const selectedProducers = Array.isArray(filterOptions.producer) ? filterOptions.producer : [filterOptions.producer];
+        filteredData = filteredData.filter((movie: MovieInfo) => {
+        const producers = movie.subtitle.producer.split(",").map((x) => x.trim());
+        return producers.some((producer) => selectedProducers.includes(producer));
+        });
+      }
+
+      if (filterOptions.release_date && filterOptions.release_date.length) {
+        const selectedDates = Array.isArray(filterOptions.release_date) 
+          ? filterOptions.release_date 
+          : [filterOptions.release_date];
+          
+        filteredData = filteredData.filter((movie: MovieInfo) => {
+          return selectedDates.includes(movie.header.complementaryInfo.text);
+        });
+      }
+      return filteredData;
+      });
     }
-    
-  }, [movies, search]);
+  }, [filterOptions]);  
   return (
     <SafeAreaView style={{...defaultStyles.containerView, height: '100%'}}>
       <View>
@@ -112,8 +213,10 @@ const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
       <View style={{gap: 16}}>
         <StyledInput
           icon="search"
-          setValue={setSearch}
-          value={search}
+          setValue={(value) => {
+            setDefaultFilters((prev) => ({ ...prev, search: value as string }));
+          }}
+          value={defaultFilters.search || ''}
           placeholder={searchPlaceholder}
         />
         <View>
@@ -126,35 +229,50 @@ const MoviesScreen: React.FC<MoviesScreenProps> = ({navigation}) => {
             gap: 4,
             rowGap: 8,
           }}>
-          <View style={{flexBasis: '48%', flex: 1}}>
+            <View style={{flexBasis: '48%', flex: 1}}>
             <Dropdown
-          setSelectedValue={setCountry}
-          selectedValue={country}
-          options={[]}
-          placeholder="director"
+            isMultiple={true}
+            onValueChange={(value) => {
+            if (value !== filterOptions.director && value !== '') {
+              setFilterOptions((prev) => ({ ...prev, director: value }));
+            }
+            }}
+            selectedValue={filterOptions.director || ''}
+            options={filterOptionsData.directors}
+            placeholder="director"
             />
-          </View>
+            </View>
           <View style={{flexBasis: '48%', flex: 1}}>
             <Dropdown
-          setSelectedValue={setCountry}
-          selectedValue={country}
-          options={[]}
+            isMultiple={true}
+            onValueChange={(value) => {
+              if (value !== filterOptions.producer && value !== '') {
+                setFilterOptions((prev) => ({ ...prev, producer: value }));
+              }
+            }}
+          selectedValue={filterOptions.producer || ''}
+          options={filterOptionsData.producers}
           placeholder="productor"
             />
           </View>
-          <View style={{flexBasis: '48%', flex: 1}}>
+            <View style={{flexBasis: '48%', flex: 1}}>
             <Dropdown
-          setSelectedValue={setCountry}
-          selectedValue={country}
-          options={[]}
-          placeholder="lanzamiento"
+              isMultiple={true}
+              onValueChange={(value) => {
+              if (value !== filterOptions.release_date && value !== '') {
+                setFilterOptions((prev) => ({ ...prev, release_date: value }));
+              }
+              }}
+              selectedValue={filterOptions.release_date || ''}
+              options={filterOptionsData.dates}
+              placeholder="lanzamiento"
             />
-          </View>
+            </View>
         </View>
           </View>
         </View>
         <View />
-        <MoviesList search={search} />
+        <MoviesList data={movies || []} error={error} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );

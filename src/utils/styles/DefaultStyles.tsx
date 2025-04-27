@@ -134,13 +134,40 @@ export const DefaultStyles = () => {
     },
     dropdownIcon: {
         position: 'absolute',
+        borderRadius: 12,
         right: 0,
         top: 0,
         bottom: 0,
-        marginRight: 12,
+        backgroundColor: colors.background,
+        paddingRight: 8,
         justifyContent: 'center',
         alignItems: 'center',
 
+      },
+
+      multipleSelectedItemStyle: {
+        // lowercase text
+        textTransform: 'lowercase',
+        backgroundColor: colors.background,
+        borderWidth: 2,
+        borderRadius: 8,
+        borderColor: colors.border,
+        padding: 12,
+        fontSize: 10,
+        color: colors.copyLighter,
+        fontFamily: 'star_jedi',
+      },
+
+      searchControlTextInputStyle: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        color: colors.copy,
+        fontFamily: 'star_jedi',
+        fontSize: 12,
+        backgroundColor: colors.background,
+        borderWidth: 2,
+        borderRadius: 12,
+        borderColor: colors.border,
       }
   });
 

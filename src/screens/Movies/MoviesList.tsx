@@ -5,19 +5,51 @@ import SubsectionLabel from '@components/SubsectionLabel';
 import StatsCard from '@components/StatsCard';
 import DefaultStyles from 'utils/styles/DefaultStyles';
 
-
-interface filters {
-    search: string;
-    page_id?: string;
+interface Header {
+  title: {
+      text: string;
+      icon: string;
+  }
+  complementaryInfo: {
+      text: string;
+      icon: string;
+  };
 }
 
 
-const MoviesList: React.FC<filters> = (filters) => {
+interface Subtitle {
+  producer: string;
+  director: string;
+}
+
+
+interface StatsItem {
+  name: string;
+  icon: string;
+  value: number;
+}
+
+interface MovieInfo {
+  episode_id: number;
+  header: Header;
+  subtitle: Subtitle;
+  description: string;
+  movieStats: StatsItem[];
+}
+
+interface MoviesListProps {
+    data: MovieInfo[];
+    error: any;
+    isLoading: boolean;
+}
+
+
+const MoviesList: React.FC<MoviesListProps> = ({ 
+    data,
+    error,
+    isLoading
+}) => {
     const defaultStyles = DefaultStyles();
-    const { data, error, isLoading } = useQuery({
-        queryKey: ['movies', filters],
-        queryFn: fetchMovies,
-    });
 
     if (isLoading) return (
         <View style={{justifyContent: 'center', alignItems: 'center'}}>
