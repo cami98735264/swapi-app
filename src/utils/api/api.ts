@@ -47,8 +47,30 @@ interface MovieInfo {
     subtitle: Subtitle;
     description: string;
     movieStats: StatsItem[];
-  }
+}
 
+interface Planet {
+    name: string;
+    rotation_period: string;
+    orbital_period: string;
+    diameter: string;
+    climate: string;
+    gravity: string;
+    terrain: string;
+    surface_water: string;
+    population: string;
+    residents: string[];
+    films: string[];
+    created: string;
+    edited: string;
+    url: string;
+}
+
+interface PlanetInfo {
+    name: string;
+    header: Header;
+    stats: StatsItem[];
+}
 
 let fetchMovies = async ({ queryKey }: { queryKey: [string, { search: string; page_id?: string }] }) => {
     const [_key, { search, page_id }] = queryKey;
@@ -100,5 +122,49 @@ let fetchMovies = async ({ queryKey }: { queryKey: [string, { search: string; pa
     }
 };
 
+let fetchPlanets = async ({ queryKey }: { queryKey: [string, { search: string; page_id?: string }] }) => {
+    const [_key, { search, page_id }] = queryKey;
+    try {
+        let baseUrl = "https://swapi.py4e.com/api/planets"
+        if (search) {
+            baseUrl += `?search=${search}`;
+        }
+        if (page_id && !search) {
+            baseUrl += "/" + page_id;
+        }
+        let response = await fetch(baseUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let data = await response.json();
+        console.log('Planets data:', data);
+        let planetInfo: PlanetInfo[] = data.results.map((planet: Planet) => ({
+            name: planet.name,
+            header: {
+                title: {
+                    text: planet.name.toLowerCase(),
+                    icon: 'public',
+                },
+                complementaryInfo: {
+                    text: planet.climate.toLowerCase(),
+                    icon: 'wb-sunny',
+                },
+            },
+            stats: [
+                { name: 'población', icon: 'people', value: planet.population === 'unknown' ? 0 : parseInt(planet.population) },
+                { name: 'diámetro', icon: 'straighten', value: parseInt(planet.diameter) },
+                { name: 'período de rotación', icon: 'rotate-right', value: parseInt(planet.rotation_period) },
+                { name: 'período orbital', icon: 'public', value: parseInt(planet.orbital_period) },
+                { name: 'superficie de agua', icon: 'water', value: parseInt(planet.surface_water) },
+            ],
+        }));
+        return planetInfo;
+    } catch (error) {
+        console.error('Error fetching planets:', error);
+        throw error;
+    }
+};
 
-export { fetchMovies };
+export { fetchMovies, fetchPlanets };
