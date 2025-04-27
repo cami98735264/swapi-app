@@ -1,7 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchMovies } from '@utils/api/api';
 import { FlatList, Text, View } from 'react-native';
-import SubsectionLabel from '@components/SubsectionLabel';
 import StatsCard from '@components/StatsCard';
 import DefaultStyles from 'utils/styles/DefaultStyles';
 
